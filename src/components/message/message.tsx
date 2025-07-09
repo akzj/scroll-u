@@ -7,6 +7,7 @@ interface MessageProps {
   isOwn?: boolean; // 是否是自己的消息
   avatar?: string; // 头像URL
   status?: 'sent' | 'delivered' | 'read'; // 消息状态
+  msgId?: number;
 }
 
 export function Message({ 
@@ -15,14 +16,15 @@ export function Message({
   time, 
   isOwn = false, 
   avatar, 
-  status = 'sent' 
+  status = 'sent',
+  msgId,
 }: MessageProps) {
   return (
     <div className={cn(
       "flex w-full max-w-md mb-4",
       isOwn ? "justify-end" : "justify-start"
     )} style={{
-      border: '1px solid red'
+      border: '1px solid green'
     }}>
       <div className={cn(
         "relative rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200 p-4",
@@ -43,8 +45,7 @@ export function Message({
               {sender}
             </h4>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>🕐</span>
-              <span>{time}</span>
+              <span>{msgId}</span>
               {isOwn && (
                 <span className={cn(
                   "ml-1 text-xs px-1 py-0.5 rounded-full border",

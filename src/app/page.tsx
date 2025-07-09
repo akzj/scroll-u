@@ -1,4 +1,7 @@
 
+'use client';
+
+import React from 'react';
 import { ScrollU, ScrollUItem } from '@/components/scroll-u';
 import { Message } from '@/components/message/message';
 
@@ -93,19 +96,88 @@ export default function Home() {
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
           <div style={{ width: '300px', margin: '0 auto' }}>
-            <ScrollU visibleItems={3} scrollSpeed={200} size="sm">
-            {testMessages.map((message, index) => (
-              <Message
-                key={index}
-                sender={message.sender}
-                content={message.content}
-                time={message.time}
-                isOwn={message.isOwn}
-                avatar={message.avatar}
-                status={message.status}
-              />
-            ))}
-            </ScrollU>
+            <ScrollU 
+              visibleItems={3} 
+              scrollSpeed={200} 
+              size="sm"
+              initialItems={[
+                <Message
+                  msgId={0}
+                  sender="系统"
+                  content="初始消息 1"
+                  time="10:00"
+                  isOwn={false}
+                  avatar=""
+                  status="read"
+                />,
+                <Message
+                  msgId={1}
+                  sender="系统"
+                  content="初始消息 2"
+                  time="10:01"
+                  isOwn={false}
+                  avatar=""
+                  status="read"
+                />,
+                <Message
+                  msgId={2}
+                  sender="系统"
+                  content="初始消息 3"
+                  time="10:02"
+                  isOwn={false}
+                  avatar=""
+                  status="read"
+                />
+              ]}
+              renderItem={async (direction, contextData) => {
+                // 模拟异步数据加载
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // 从 contextData 中提取 msgId
+                let msgId: number;
+                if (contextData && React.isValidElement(contextData)) {
+                  // contextData 是 React 元素，从 props 中获取 msgId
+                  const currentMsgId = (contextData as any).props?.msgId;
+                  if (typeof currentMsgId === 'number') {
+                    msgId = direction === 'pre' ? currentMsgId - 1 : currentMsgId + 1;
+                  } else {
+                    // 如果没有 msgId，使用默认值
+                    msgId = direction === 'pre' ? -1 : 100;
+                  }
+                } else {
+                  // 如果没有上下文数据，使用默认值
+                  msgId = direction === 'pre' ? -1 : 100;
+                }
+                
+                const messageData = {
+                  sender: `动态用户 ${direction}`,
+                  content: `动态消息 ${Date.now()} (${direction})`,
+                  time: new Date().toLocaleTimeString(),
+                  isOwn: Math.random() > 0.5,
+                  avatar: "",
+                  status: "read" as const,
+                  msgId: msgId
+                };
+                
+                // 如果有上下文数据，可以基于它来生成新数据
+                if (contextData) {
+                  console.log('Context data:', contextData.props);
+                  console.log(`Direction: ${direction}, New msgId: ${msgId}`);
+                }
+                
+                return (
+                  <Message  
+                    msgId={messageData.msgId as number}
+                    sender={messageData.sender}
+                    content={messageData.content}
+                    time={messageData.time}
+                    isOwn={messageData.isOwn}
+                    avatar={messageData.avatar}
+                    status={messageData.status}
+                  />
+                );
+              }}
+            />
           </div>
         </div>
       </div>
