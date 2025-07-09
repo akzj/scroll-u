@@ -3,18 +3,21 @@ import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils'; // 假设你有这个工具函数
 import { scrollUVariants, scrollUItemVariants, scrollUButtonVariants } from './variants';
-import { ScrollUItemProps } from './scroll-u-item';
+import { DefaultScrollBar } from './scroll-bar';
+
+
 
 export interface ScrollUProps<T = any>
   extends React.HTMLAttributes<HTMLDivElement>,
   VariantProps<typeof scrollUVariants> {
   visibleItems?: number;
-  scrollSpeed?: number;
   showButtons?: boolean;
   maxCacheItems?: number; // 最大缓存项目数
   containerHeight?: number; // 直接指定容器高度
   renderItem?: (direction: 'pre' | 'next', contextData?: T) => Promise<React.ReactNode[]>;
   initialItems?: React.ReactNode[];
+  showScrollBar?: boolean;
+  scrollBarRender?: (height: number, top: number) => React.ReactNode;
 }
 
 const ScrollU = <T = any>({
@@ -22,23 +25,24 @@ const ScrollU = <T = any>({
   variant,
   size,
   visibleItems = 5,
-  scrollSpeed = 1,
   showButtons = true,
   maxCacheItems = 10,
   className,
-  containerHeight,
+  containerHeight = 500,
   renderItem,
   initialItems = [],
+  showScrollBar = true,
+  scrollBarRender = (height: number, top: number) => (
+    <DefaultScrollBar height={height} top={top} />
+  ),
   ...props
 }: ScrollUProps<T>) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const [calculatedHeight, setCalculatedHeight] = useState<number>(0);
   const [translateY, setTranslateY] = useState<number>(0);
   const [velocity, setVelocity] = useState<number>(0);
-  const lastScrollTime = useRef<number>(0);
+  const [scrollBar, setScroll] = useState<{ height: number, top: number }>({ height: 0, top: 0 });
+
   const clearButtonTimer = useRef<NodeJS.Timeout | null>(null);
   const clearTopItemTimer = useRef<NodeJS.Timeout | null>(null);
   const [items, setItems] = useState<React.ReactNode[]>(initialItems);
@@ -48,6 +52,8 @@ const ScrollU = <T = any>({
   const lastNextMsgId = useRef<number | null>(null);
   const firstItemRef = useRef<HTMLDivElement>(null);
   const lastItemRef = useRef<HTMLDivElement>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const rafId = useRef<number | null>(null);
   const intersectionObserver = useRef<IntersectionObserver | null>(null);
   const [pendingPreAdjust, setPendingPreAdjust] = useState<false | { oldHeight: number, currentTranslateY: number }>(false);
 
@@ -77,6 +83,7 @@ const ScrollU = <T = any>({
       setItems(prev => [...newItems, ...prev]);
     } finally {
       setIsLoadingPre(false);
+      lastPreMsgId.current = null;
     }
   }, [isLoadingPre, renderItem, items, translateY]);
 
@@ -97,50 +104,18 @@ const ScrollU = <T = any>({
       lastNextMsgId.current = currentMsgId;
     }
 
-    setIsLoadingNext(true);
     try {
-      console.log('handleNext - Current last item:', lastItemData);
-
-      // 调用 renderItem，传递 'next' 方向和上下文数据
-      if (!renderItem) return;
+      setIsLoadingNext(true);
       const newItems = await renderItem('next', lastItemData as T);
-
-      // 将新项目添加到底部
       setItems(prev => [...prev, ...newItems]);
-
-      // // 使用 requestAnimationFrame 优化渲染流程
-      // requestAnimationFrame(() => {
-      //   // 等待 DOM 更新完成
-      //   requestAnimationFrame(() => {
-      //     // 更新观察器
-      //     updateObservers();
-      //   });
-      // });
     } finally {
       setIsLoadingNext(false);
+      lastNextMsgId.current = null; // reset
     }
   }, [isLoadingNext, renderItem, items]);
 
-  // 更新观察目标
-  const updateObservers = useCallback(() => {
-    if (intersectionObserver.current) {
-      // 停止观察当前元素
-      intersectionObserver.current.disconnect();
-
-      // 重新观察新的第一个和最后一个元素
-      if (firstItemRef.current) {
-        intersectionObserver.current.observe(firstItemRef.current);
-      }
-      if (lastItemRef.current) {
-        intersectionObserver.current.observe(lastItemRef.current);
-      }
-    }
-  }, []);
-
   // 设置 IntersectionObserver
   const setupIntersectionObserver = useCallback(() => {
-    console.log('Setting up IntersectionObserver...', items.length);
-
     // 清理之前的 observer
     if (intersectionObserver.current) {
       intersectionObserver.current.disconnect();
@@ -205,7 +180,6 @@ const ScrollU = <T = any>({
       }
     }
     if (removeIndex !== -1) {
-      console.log('removeIndex', removeIndex);
       setItems(prev => prev.slice(0, removeIndex));
     }
   }, [containerRef, contentRef]);
@@ -224,22 +198,66 @@ const ScrollU = <T = any>({
 
         const itemRect = node.getBoundingClientRect();
         if (itemRect.bottom < containerRect.top) {
-          console.log("mRect.bottom < containerRect.top", itemRect.bottom, containerRect.top)
           removeIndex = i;
         } else {
-          console.log("mRect.bottom >= containerRect.top", itemRect.bottom, containerRect.top)
           break;
         }
       }
     }
     if (removeIndex !== -1) {
-      console.log('clean top items', removeIndex);
       const currentTranslateY = translateY;
       const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });
       setItems(prev => prev.slice(removeIndex,));
     }
   }, [containerRef, contentRef]);
+
+
+
+  const startInertia = (initialVelocity: number) => {
+    let velocity = initialVelocity;
+    setIsScrolling(true);
+
+    const animate = () => {
+      if (Math.abs(velocity) < 0.1) {
+        setIsScrolling(false);
+        return;
+      }
+
+      setTranslateY(prev => {
+        const next = prev - velocity;
+        // 边界处理
+        const max = containerRef.current!.offsetHeight * 2 / 3;
+        const min = containerRef.current!.offsetHeight * 1 / 3 - contentRef.current!.offsetHeight;
+        const newTranslateY = Math.max(min, Math.min(max, next));
+        return newTranslateY;
+      });
+
+      velocity *= 0.35; // 模拟摩擦力
+      rafId.current = requestAnimationFrame(animate);
+    };
+
+    rafId.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+    if (contentRef.current && containerRef.current) {
+      const containerHeight = containerRef.current.offsetHeight;
+      const contentHeight = contentRef.current.offsetHeight;
+
+      const topHiddenHeight = Math.max(0, -translateY);
+      const bottomHiddenHeight = Math.max(0, contentHeight - containerHeight - topHiddenHeight);
+      const visibleHeight = Math.min(containerHeight, contentHeight - topHiddenHeight);
+
+      const scrollBarHeight = (containerHeight / contentHeight) * containerHeight;
+      const scrollBarTop = (topHiddenHeight / contentHeight) * containerHeight;
+
+      setScroll({
+        height: scrollBarHeight,
+        top: scrollBarTop,
+      });
+    }
+  }, [translateY, items]);
 
   // 监听滚动事件（仅处理滚动位置，不处理数据加载）
   const handleScroll = useCallback((event: WheelEvent) => {
@@ -252,22 +270,10 @@ const ScrollU = <T = any>({
     if (clearTopItemTimer.current) {
       clearTimeout(clearTopItemTimer.current);
     }
-    clearTopItemTimer.current = setTimeout(cleanItemsFromTop, 3000);
+    clearTopItemTimer.current = setTimeout(cleanItemsFromTop, 500);
 
     const deltaY = event.deltaY;
-
-    setTranslateY(prevTranslateY => {
-      const newTranslateY = prevTranslateY - deltaY;
-      const maxHeight = containerRef.current!.offsetHeight * 2 / 3;
-      const minHeight = containerRef.current!.offsetHeight * 1 / 3 - contentRef.current!.offsetHeight;
-      if (newTranslateY > maxHeight) {
-        return maxHeight;
-      }
-      if (newTranslateY < minHeight) {
-        return minHeight;
-      }
-      return newTranslateY;
-    });
+    startInertia(deltaY);
   }, []
   );
 
@@ -283,7 +289,6 @@ const ScrollU = <T = any>({
         if (clearButtonTimer.current) {
           clearTimeout(clearButtonTimer.current);
         }
-        console.log("clearTimer")
       };
     }
   }, [handleScroll]);
@@ -299,19 +304,6 @@ const ScrollU = <T = any>({
       }
     };
   }, [items.length]); // 只依赖 items.length
-
-  // 计算容器高度
-  useEffect(() => {
-    if (containerHeight) {
-      setCalculatedHeight(containerHeight);
-    } else if (contentRef.current && contentRef.current.firstElementChild) {
-      const firstItem = contentRef.current.firstElementChild as HTMLElement;
-      setCalculatedHeight(firstItem.offsetHeight * visibleItems);
-    }
-
-    // 重置滚动位置
-    setTranslateY(0);
-  }, [containerHeight, visibleItems]);
 
   // pre 加载后自动平移
   useLayoutEffect(() => {
@@ -330,10 +322,6 @@ const ScrollU = <T = any>({
     }
   }, [items, pendingPreAdjust]);
 
-  const getContainerHeight = () => {
-    return calculatedHeight || 180; // 设置一个默认高度
-  };
-
   return (
     <div
       ref={containerRef}
@@ -342,7 +330,7 @@ const ScrollU = <T = any>({
         'relative'
       )}
       style={{
-        height: `${getContainerHeight()}px`,
+        height: `${containerHeight}px`,
         border: '2px solid red',
         overflow: 'hidden'
       }}
@@ -351,21 +339,18 @@ const ScrollU = <T = any>({
       onBlur={() => console.log('Container blurred')}
       {...props}
     >
+
       <div
         ref={contentRef}
         className="scroll-u-content"
         style={{
           transform: `translateY(${translateY}px)`,
-          //transition: Math.abs(velocity) > 0.05 ? 'none' : 'transform 0.15s ease-out',
           willChange: 'transform'
         }}
       >
         {items.map((item, index) => {
           const isFirst = index === 0;
           const isLast = index === items.length - 1;
-
-          //  console.log(`Rendering item ${index}, isFirst: ${isFirst}, isLast: ${isLast}`);
-
           // 为第一个和最后一个元素包装一个 div 来设置 ref
           if (isFirst || isLast) {
             return (
@@ -387,8 +372,7 @@ const ScrollU = <T = any>({
           </div>
         )}
       </div>
-
-
+      {showScrollBar && (scrollBarRender(scrollBar.height,scrollBar.top))}
     </div>
   );
 };

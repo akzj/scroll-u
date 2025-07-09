@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { ScrollU, ScrollUItem } from '@/components/scroll-u';
+import { ScrollU } from '@/components/scroll-u';
 import { Message } from '@/components/message/message';
 
 export default function Home() {
@@ -95,11 +95,11 @@ export default function Home() {
         {/* 滚动列表示例 */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
-          <div style={{ width: '300px', margin: '0 auto' }}>
-            <ScrollU 
-              visibleItems={3} 
-              scrollSpeed={200} 
+          <div style={{ width: '500px', margin: '0 auto' }}>
+            <ScrollU
+              visibleItems={3}
               size="sm"
+              containerHeight={600}
               initialItems={[
                 <Message
                   msgId={0}
@@ -130,7 +130,7 @@ export default function Home() {
                 />
               ]}
               renderItem={async (direction, contextData) => {
-              //  await new Promise(resolve => setTimeout(resolve, 1));
+              //  await new Promise(resolve => setTimeout(resolve, 10));
 
                 // 获取当前 msgId
                 let msgId: number;
@@ -146,7 +146,7 @@ export default function Home() {
                 }
 
                 // 批量生成 3 条消息
-                const count = 3;
+                const count = 10;
                 const messages = Array.from({ length: count }).map((_, i) => {
                   const realId = direction === 'pre' ? msgId - (i + 1) : msgId + (i + 1);
                   return (
