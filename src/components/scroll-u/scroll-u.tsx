@@ -13,7 +13,7 @@ export interface ScrollUProps<T = any>
   showButtons?: boolean;
   maxCacheItems?: number; // 最大缓存项目数
   containerHeight?: number; // 直接指定容器高度
-  renderItem?: (direction: 'pre' | 'next', contextData?: T) => Promise<React.ReactNode>;
+  renderItem?: (direction: 'pre' | 'next', contextData?: T) => Promise<React.ReactNode[]>;
   initialItems?: React.ReactNode[];
 }
 
@@ -39,7 +39,8 @@ const ScrollU = <T = any>({
   const [translateY, setTranslateY] = useState<number>(0);
   const [velocity, setVelocity] = useState<number>(0);
   const lastScrollTime = useRef<number>(0);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const clearButtonTimer = useRef<NodeJS.Timeout | null>(null);
+  const clearTopItemTimer = useRef<NodeJS.Timeout | null>(null);
   const [items, setItems] = useState<React.ReactNode[]>(initialItems);
   const [isLoadingPre, setIsLoadingPre] = useState(false);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
@@ -50,24 +51,12 @@ const ScrollU = <T = any>({
   const intersectionObserver = useRef<IntersectionObserver | null>(null);
   const [pendingPreAdjust, setPendingPreAdjust] = useState<false | { oldHeight: number, currentTranslateY: number }>(false);
 
-  // 获取子组件列表
-  const childCount = items.length;
-  const maxTranslateY = Math.max(0, (childCount - visibleItems) * (calculatedHeight / visibleItems));
-
 
 
   // pre 函数：向下滚动，在顶端添加新节点
   const handlePre = useCallback(async () => {
     if (isLoadingPre || !renderItem) return;
-
-    // 1. 先同步读取 oldHeight
-    const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
-    const currentTranslateY = translateY;
-
-    // 获取当前第一个项目的数据作为上下文
     const firstItemData = items.length > 0 ? items[0] : undefined;
-
-    // 防重复请求：检查是否已经请求过相同 ID 的消息
     if (firstItemData && React.isValidElement(firstItemData)) {
       const currentMsgId = (firstItemData as any).props?.msgId;
       if (typeof currentMsgId === 'number' && lastPreMsgId.current === currentMsgId) {
@@ -79,19 +68,13 @@ const ScrollU = <T = any>({
 
     setIsLoadingPre(true);
     try {
-      console.log('handlePre - Current first item:', firstItemData);
-
-      // 调用 renderItem，传递 'pre' 方向和上下文数据
-      if (!renderItem) return;
-      const newItem = await renderItem('pre', firstItemData as T);
-
+      const newItems = await renderItem('pre', firstItemData as T);
       // 2. 先设置 pendingPreAdjust，带上 oldHeight
+      const currentTranslateY = translateY;
+      const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });
-      console.log('handlePre - Pending pre adjust:', pendingPreAdjust);
       // 3. 再 setItems
-      setItems(prev => [newItem, ...prev]);
-
-      // 标记需要调整
+      setItems(prev => [...newItems, ...prev]);
     } finally {
       setIsLoadingPre(false);
     }
@@ -120,23 +103,19 @@ const ScrollU = <T = any>({
 
       // 调用 renderItem，传递 'next' 方向和上下文数据
       if (!renderItem) return;
-      const newItem = await renderItem('next', lastItemData as T);
+      const newItems = await renderItem('next', lastItemData as T);
 
       // 将新项目添加到底部
-      setItems(prev => {
-        const newItems = [...prev, newItem]//.slice(-maxCacheItems);
-        //console.log('handleNext - Updated items count:', newItems.length);
-        return newItems;
-      });
+      setItems(prev => [...prev, ...newItems]);
 
-      // 使用 requestAnimationFrame 优化渲染流程
-      requestAnimationFrame(() => {
-        // 等待 DOM 更新完成
-        requestAnimationFrame(() => {
-          // 更新观察器
-          updateObservers();
-        });
-      });
+      // // 使用 requestAnimationFrame 优化渲染流程
+      // requestAnimationFrame(() => {
+      //   // 等待 DOM 更新完成
+      //   requestAnimationFrame(() => {
+      //     // 更新观察器
+      //     updateObservers();
+      //   });
+      // });
     } finally {
       setIsLoadingNext(false);
     }
@@ -170,25 +149,14 @@ const ScrollU = <T = any>({
     // 创建新的 observer
     intersectionObserver.current = new IntersectionObserver(
       (entries) => {
-        //console.log('IntersectionObserver entries:', entries);
         entries.forEach((entry) => {
-          //console.log('Entry:', {
-          //  target: entry.target,
-          //  isIntersecting: entry.isIntersecting,
-          //  intersectionRatio: entry.intersectionRatio,
-          //  firstItemRef: firstItemRef.current,
-          //  lastItemRef: lastItemRef.current
-          //});
-
           if (entry.isIntersecting) {
             // 第一个元素可见，加载 pre 数据
             if (entry.target === firstItemRef.current) {
-              //console.log('First item visible, loading pre data');
               handlePre();
             }
             // 最后一个元素可见，加载 next 数据
             else if (entry.target === lastItemRef.current) {
-              //console.log('Last item visible, loading next data');
               handleNext();
             }
           }
@@ -203,25 +171,88 @@ const ScrollU = <T = any>({
 
     // 观察第一个和最后一个元素
     if (firstItemRef.current) {
-      //console.log('Observing first item:', firstItemRef.current);
       intersectionObserver.current.observe(firstItemRef.current);
     } else {
       console.log('First item ref is null');
     }
 
     if (lastItemRef.current) {
-      //console.log('Observing last item:', lastItemRef.current);
       intersectionObserver.current.observe(lastItemRef.current);
     } else {
       console.log('Last item ref is null');
     }
   }, [items.length]); // 只依赖 items.length
 
+
+  const cleanItemsFromButton = useCallback(() => {
+    let removeIndex = -1;
+    const container = containerRef.current;
+    const nodes = contentRef.current?.children;
+
+    if (container && nodes) {
+      const containerRect = container.getBoundingClientRect();
+
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        const node = nodes[i] as HTMLElement;
+        if (!node) continue;
+
+        const itemRect = node.getBoundingClientRect();
+        if (itemRect.top > containerRect.bottom) {
+          removeIndex = i;
+        } else {
+          break;
+        }
+      }
+    }
+    if (removeIndex !== -1) {
+      console.log('removeIndex', removeIndex);
+      setItems(prev => prev.slice(0, removeIndex));
+    }
+  }, [containerRef, contentRef]);
+
+  const cleanItemsFromTop = useCallback(() => {
+    let removeIndex = -1;
+    const container = containerRef.current;
+    const nodes = contentRef.current?.children;
+
+    if (container && nodes) {
+      const containerRect = container.getBoundingClientRect();
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i] as HTMLElement;
+        if (!node) continue;
+
+        const itemRect = node.getBoundingClientRect();
+        if (itemRect.bottom < containerRect.top) {
+          console.log("mRect.bottom < containerRect.top", itemRect.bottom, containerRect.top)
+          removeIndex = i;
+        } else {
+          console.log("mRect.bottom >= containerRect.top", itemRect.bottom, containerRect.top)
+          break;
+        }
+      }
+    }
+    if (removeIndex !== -1) {
+      console.log('clean top items', removeIndex);
+      const currentTranslateY = translateY;
+      const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
+      setPendingPreAdjust({ oldHeight, currentTranslateY });
+      setItems(prev => prev.slice(removeIndex,));
+    }
+  }, [containerRef, contentRef]);
+
   // 监听滚动事件（仅处理滚动位置，不处理数据加载）
-  const handleScroll = async (event: WheelEvent) => {
-
-
+  const handleScroll = useCallback((event: WheelEvent) => {
     event.preventDefault();
+    if (clearButtonTimer.current) {
+      clearTimeout(clearButtonTimer.current);
+    }
+    clearButtonTimer.current = setTimeout(cleanItemsFromButton, 300);
+
+    if (clearTopItemTimer.current) {
+      clearTimeout(clearTopItemTimer.current);
+    }
+    clearTopItemTimer.current = setTimeout(cleanItemsFromTop, 3000);
 
     const deltaY = event.deltaY;
 
@@ -237,13 +268,8 @@ const ScrollU = <T = any>({
       }
       return newTranslateY;
     });
-
-    //  console.log('handleScroll', translateY);
-    // 设置防抖定时器
-    scrollTimeout.current = setTimeout(() => {
-      setVelocity(0);
-    }, 100);
-  };
+  }, []
+  );
 
   // 添加滚动事件监听器
   useEffect(() => {
@@ -254,9 +280,10 @@ const ScrollU = <T = any>({
 
       return () => {
         container.removeEventListener('wheel', handleScroll);
-        if (scrollTimeout.current) {
-          clearTimeout(scrollTimeout.current);
+        if (clearButtonTimer.current) {
+          clearTimeout(clearButtonTimer.current);
         }
+        console.log("clearTimer")
       };
     }
   }, [handleScroll]);
@@ -294,9 +321,8 @@ const ScrollU = <T = any>({
       const heightDiff = newHeight - pendingPreAdjust.oldHeight;
       if (heightDiff !== 0) {
         //setTranslateY(pendingPreAdjust.currentTranslateY - heightDiff);
-        console.log('newHeight', newHeight, 'oldHeight', pendingPreAdjust.oldHeight, 'heightDiff', heightDiff);
+        //console.log('newHeight', newHeight, 'oldHeight', pendingPreAdjust.oldHeight, 'heightDiff', heightDiff);
         setTranslateY(prevTranslateY => {
-          console.log('prevTranslateY', prevTranslateY);
           return prevTranslateY - heightDiff;
         });
       }
@@ -305,7 +331,6 @@ const ScrollU = <T = any>({
   }, [items, pendingPreAdjust]);
 
   const getContainerHeight = () => {
-    // console.log('Container height:', calculatedHeight, 'translateY:', translateY);
     return calculatedHeight || 180; // 设置一个默认高度
   };
 
@@ -347,7 +372,7 @@ const ScrollU = <T = any>({
               <div
                 key={index}
                 ref={isFirst ? firstItemRef : lastItemRef}
-                style={{ border: isFirst ? '2px solid red' : '2px solid blue' }}
+              //style={{ border: isFirst ? '2px solid red' : '2px solid blue' }}
               >
                 {item}
               </div>

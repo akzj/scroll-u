@@ -130,52 +130,41 @@ export default function Home() {
                 />
               ]}
               renderItem={async (direction, contextData) => {
-                // 模拟异步数据加载
-                await new Promise(resolve => setTimeout(resolve, 1));
+              //  await new Promise(resolve => setTimeout(resolve, 1));
 
-                // 从 contextData 中提取 msgId
+                // 获取当前 msgId
                 let msgId: number;
                 if (contextData && React.isValidElement(contextData)) {
-                  // contextData 是 React 元素，从 props 中获取 msgId
                   const currentMsgId = (contextData as any).props?.msgId;
                   if (typeof currentMsgId === 'number') {
-                    msgId = direction === 'pre' ? currentMsgId - 1 : currentMsgId + 1;
+                    msgId = currentMsgId;
                   } else {
-                    // 如果没有 msgId，使用默认值
                     msgId = direction === 'pre' ? -1 : 100;
                   }
                 } else {
-                  // 如果没有上下文数据，使用默认值
                   msgId = direction === 'pre' ? -1 : 100;
                 }
-                
-                const messageData = {
-                  sender: `动态用户 ${direction}`,
-                  content: `动态消息 ${Date.now()} (${direction})`,
-                  time: new Date().toLocaleTimeString(),
-                  isOwn: Math.random() > 0.5,
-                  avatar: "",
-                  status: "read" as const,
-                  msgId: msgId
-                };
-                
-                // 如果有上下文数据，可以基于它来生成新数据
-                if (contextData) {
-                  console.log('Context data:', contextData.props);
-                  console.log(`Direction: ${direction}, New msgId: ${msgId}`);
-                }
-                
-                return (
-                  <Message  
-                    msgId={messageData.msgId as number}
-                    sender={messageData.sender}
-                    content={messageData.content}
-                    time={messageData.time}
-                    isOwn={messageData.isOwn}
-                    avatar={messageData.avatar}
-                    status={messageData.status}
-                  />
-                );
+
+                // 批量生成 3 条消息
+                const count = 3;
+                const messages = Array.from({ length: count }).map((_, i) => {
+                  const realId = direction === 'pre' ? msgId - (i + 1) : msgId + (i + 1);
+                  return (
+                    <Message
+                      key={realId}
+                      msgId={realId}
+                      sender={`动态用户 ${direction}`}
+                      content={`动态消息 ${Date.now()} (${direction})`}
+                      time={new Date().toLocaleTimeString()}
+                      isOwn={Math.random() > 0.5}
+                      avatar=""
+                      status="read"
+                    />
+                  );
+                });
+
+                // pre 方向需要倒序插入，next 方向顺序插入
+                return direction === 'pre' ? messages.reverse() : messages;
               }}
             />
           </div>
