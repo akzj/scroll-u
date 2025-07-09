@@ -1,103 +1,116 @@
-import Image from "next/image";
+
+import { ScrollU, ScrollUItem } from '@/components/scroll-u';
+import { Message } from '@/components/message/message';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const testMessages = [
+    {
+      sender: "张三",
+      content: "你好！今天天气真不错，要不要一起出去走走？",
+      time: "10:30",
+      isOwn: false,
+      avatar: "",
+      status: "read" as const
+    },
+    {
+      sender: "我",
+      content: "好啊！去哪里呢？",
+      time: "10:32",
+      isOwn: true,
+      avatar: "",
+      status: "read" as const
+    },
+    {
+      sender: "李四",
+      content: "大家下午有空吗？我们团队有个会议需要讨论新项目的进展。",
+      time: "11:15",
+      isOwn: false,
+      avatar: "",
+      status: "delivered" as const
+    },
+    {
+      sender: "我",
+      content: "我有空，下午2点可以吗？",
+      time: "11:18",
+      isOwn: true,
+      avatar: "",
+      status: "sent" as const
+    },
+    {
+      sender: "王五",
+      content: "刚刚看了你发的代码，有几个地方需要优化一下，我整理了一个文档发给你了。",
+      time: "12:45",
+      isOwn: false,
+      avatar: "",
+      status: "read" as const
+    },
+    {
+      sender: "我",
+      content: "收到！我马上看看，谢谢你的建议。",
+      time: "12:50",
+      isOwn: true,
+      avatar: "",
+      status: "delivered" as const
+    },
+    {
+      sender: "赵六",
+      content: "周末要不要一起去看电影？新上映的科幻片听说很不错。",
+      time: "14:20",
+      isOwn: false,
+      avatar: "",
+      status: "read" as const
+    },
+    {
+      sender: "我",
+      content: "好啊！什么时间？我周六下午有空。",
+      time: "14:25",
+      isOwn: true,
+      avatar: "",
+      status: "sent" as const
+    },
+    {
+      sender: "孙七",
+      content: "项目进度怎么样了？客户那边催得比较紧，我们需要加快一下节奏。",
+      time: "16:10",
+      isOwn: false,
+      avatar: "",
+      status: "read" as const
+    },
+    {
+      sender: "我",
+      content: "好的，我会优先处理这个项目，预计明天就能完成第一阶段的开发。",
+      time: "16:15",
+      isOwn: true,
+      avatar: "",
+      status: "sent" as const
+    }
+  ];
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* 滚动列表示例 */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
+          <div style={{ width: '300px', margin: '0 auto' }}>
+            <ScrollU visibleItems={3} scrollSpeed={200} size="sm">
+            {testMessages.map((message, index) => (
+              <Message
+                key={index}
+                sender={message.sender}
+                content={message.content}
+                time={message.time}
+                isOwn={message.isOwn}
+                avatar={message.avatar}
+                status={message.status}
+              />
+            ))}
+            </ScrollU>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
+
+
