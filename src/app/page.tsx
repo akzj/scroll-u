@@ -131,7 +131,7 @@ export default function Home() {
               ]}
               renderItem={async (direction, contextData) => {
                 // 模拟异步数据加载
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 1));
 
                 // 从 contextData 中提取 msgId
                 let msgId: number;
