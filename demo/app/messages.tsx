@@ -96,9 +96,7 @@ export default function MessagesPage() {
               key={index}
               sender={message.sender}
               content={message.content}
-              time={message.time}
               isOwn={message.isOwn}
-              avatar={message.avatar}
               status={message.status}
             />
           ))}

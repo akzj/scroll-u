@@ -29,7 +29,7 @@
     "build": "rollup -c",
     "dev": "next dev demo",
     "prepublishOnly": "npm run build",
-    "build:demo": "vite build",
+    "build:demo": "next build demo",
     "preview": "vite preview"
   },
   "homepage": "https://github.com/akzj/scroll-u#readme",
