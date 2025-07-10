@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { ScrollU } from '../../src/index';
+import { ScrollU } from 'scroll-u';
 import { Message } from '../components/message/message';
 
 export default function Home() {

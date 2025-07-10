@@ -10,17 +10,13 @@ export default [
     input: 'src/index.ts',
     output: [
       {
-        dir: 'dist/esm',
+        file: 'dist/index.esm.js',
         format: 'esm',
-        preserveModules: true,
-        preserveModulesRoot: 'src',
         sourcemap: true,
       },
       {
-        dir: 'dist/cjs',
+        file: 'dist/index.js',
         format: 'cjs',
-        preserveModules: true,
-        preserveModulesRoot: 'src',
         sourcemap: true,
       },
     ],
