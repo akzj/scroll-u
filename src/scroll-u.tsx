@@ -1,34 +1,41 @@
 'use client'
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useImperativeHandle, forwardRef } from 'react';
 import { DefaultScrollBar } from './scroll-bar';
 import { cn } from './utils';
 
+export type ReactNodes = React.ReactNode[];
+export type UpdateNodeHandle = (items: ReactNodes) => ReactNodes;
 
-export interface ScrollUProps<T = any> {
+export interface ScrollURef {
+  updateNodes: (handle: UpdateNodeHandle) => void;
+  listNodes: () => ReactNodes;
+}
+
+export interface ScrollUProps {
   className?: any;
-  renderItem?: (direction: 'pre' | 'next', contextData?: T) => Promise<React.ReactNode[]>;
-  initialItems?: React.ReactNode[];
+  renderItem?: (direction: 'pre' | 'next', contextData?: React.ReactNode) => Promise<ReactNodes>;
+  initialItems?: ReactNodes;
   showScrollBar?: boolean;
   scrollBarRender?: (height: number, top: number) => React.ReactNode;
 }
 
-const ScrollU = <T = any>({
-  className,
-  renderItem,
-  initialItems = [],
-  showScrollBar = true,
-  scrollBarRender = (height: number, top: number) => (
-    <DefaultScrollBar height={height} top={top} />
-  ),
-  ...props
-}: ScrollUProps<T>) => {
+const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
+  const { className,
+    renderItem,
+    initialItems = [],
+    showScrollBar = true,
+    scrollBarRender = (height: number, top: number) => (
+      <DefaultScrollBar height={height} top={top} />
+    )
+  } = props;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [translateY, setTranslateY] = useState<number>(0);
   const [scrollBar, setScroll] = useState<{ height: number, top: number }>({ height: 0, top: 0 });
   const clearButtonTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTopItemTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [items, setItems] = useState<React.ReactNode[]>(initialItems);
+  const [items, setItems] = useState<ReactNodes>(initialItems);
   const [isLoadingPre, setIsLoadingPre] = useState(false);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
   const lastPreMsgId = useRef<number | null>(null);
@@ -41,9 +48,9 @@ const ScrollU = <T = any>({
 
   const handlePre = useCallback(async () => {
     if (isLoadingPre || !renderItem) return;
-    const firstItemData = items.length > 0 ? items[0] : undefined;
-    if (firstItemData && React.isValidElement(firstItemData)) {
-      const currentMsgId = (firstItemData as any).props?.msgId;
+    const first = items.length > 0 ? items[0] : undefined;
+    if (first && React.isValidElement(first)) {
+      const currentMsgId = (first as any).props?.msgId;
       if (typeof currentMsgId === 'number' && lastPreMsgId.current === currentMsgId) {
         console.log('handlePre - Skipping duplicate request for msgId:', currentMsgId);
         return;
@@ -53,7 +60,7 @@ const ScrollU = <T = any>({
 
     setIsLoadingPre(true);
     try {
-      const newItems = await renderItem('pre', firstItemData as T);
+      const newItems = await renderItem('pre', first);
       const currentTranslateY = translateY;
       const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });
@@ -65,13 +72,32 @@ const ScrollU = <T = any>({
     }
   }, [isLoadingPre, renderItem, items, translateY]);
 
+
+
+  useImperativeHandle(ref, () => ({
+    updateNodes: (handler: UpdateNodeHandle) => {
+      setItems(nextItems => {
+
+        // need to update offset when item change.
+        const currentTranslateY = translateY;
+        const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
+        setPendingPreAdjust({ oldHeight, currentTranslateY });
+
+        return handler(nextItems)
+      });
+    },
+    listNodes: () => {
+      return items
+    }
+  }));
+
+
   const handleNext = useCallback(async () => {
     if (isLoadingNext || !renderItem) return;
 
-    const lastItemData = items.length > 0 ? items[items.length - 1] : undefined;
-
-    if (lastItemData && React.isValidElement(lastItemData)) {
-      const currentMsgId = (lastItemData as any).props?.msgId;
+    const last = items.length > 0 ? items[items.length - 1] : undefined;
+    if (last && React.isValidElement(last)) {
+      const currentMsgId = (last as any).props?.msgId;
       if (typeof currentMsgId === 'number' && lastNextMsgId.current === currentMsgId) {
         console.log('handleNext - Skipping duplicate request for msgId:', currentMsgId);
         return;
@@ -81,7 +107,7 @@ const ScrollU = <T = any>({
 
     try {
       setIsLoadingNext(true);
-      const newItems = await renderItem('next', lastItemData as T);
+      const newItems = await renderItem('next', last);
       setItems(prev => [...prev, ...newItems]);
     } finally {
       setIsLoadingNext(false);
@@ -210,11 +236,7 @@ const ScrollU = <T = any>({
     if (contentRef.current && containerRef.current) {
       const containerHeight = containerRef.current.offsetHeight;
       const contentHeight = contentRef.current.offsetHeight;
-
       const topHiddenHeight = Math.max(0, -translateY);
-      const bottomHiddenHeight = Math.max(0, contentHeight - containerHeight - topHiddenHeight);
-      const visibleHeight = Math.min(containerHeight, contentHeight - topHiddenHeight);
-
       const scrollBarHeight = (containerHeight / contentHeight) * containerHeight;
       const scrollBarTop = (topHiddenHeight / contentHeight) * containerHeight;
 
@@ -315,6 +337,6 @@ const ScrollU = <T = any>({
       {showScrollBar && (scrollBarRender(scrollBar.height, scrollBar.top))}
     </div>
   );
-};
+});
 
 export { ScrollU };
