@@ -13,6 +13,16 @@
 
 适用于聊天窗口、日志流、时间轴等需要动态加载和平滑滚动的场景。
 
+
+| 特性      | scroll-u     | react-window   | react-virtualized   |
+| ------- | --------- | -------------- | ------------------- |
+| 双向无限滚动  | ✅ 原生支持    | ❌ 需要hack       | ❌ 需要hack            |
+| 动态清理DOM | ✅ 自动      | ✅ 自动           | ✅ 自动                |
+| 自定义滚动条  | ✅ 支持      | ❌ 不支持          | ❌ 不支持               |
+| 速度响应动画  | ✅ 支持      | ❌ 不支持          | ❌ 不支持               |
+| 学习成本    | 低（API简单）  | 中等             | 高                   |
+
+
 ---
 
 ## 📄 ScrollU Component Summary (English)
@@ -33,7 +43,6 @@ Ideal for chat windows, log feeds, timelines, and other scenarios requiring dyna
 
 ```tsx
 <ScrollU
-  containerHeight={500}
   initialItems={[...]}
   renderItem={async (direction, data) => {
     // 返回新加载的节点
