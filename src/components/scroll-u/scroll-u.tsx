@@ -1,19 +1,12 @@
 'use client'
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils'; // 假设你有这个工具函数
-import { scrollUVariants, scrollUItemVariants, scrollUButtonVariants } from './variants';
+import { cn } from '@/lib/utils'; 
 import { DefaultScrollBar } from './scroll-bar';
 
 
 
-export interface ScrollUProps<T = any>
-  extends React.HTMLAttributes<HTMLDivElement>,
-  VariantProps<typeof scrollUVariants> {
-  visibleItems?: number;
-  showButtons?: boolean;
-  maxCacheItems?: number; // 最大缓存项目数
-  containerHeight?: number; // 直接指定容器高度
+export interface ScrollUProps<T = any> {
+  className?: any;
   renderItem?: (direction: 'pre' | 'next', contextData?: T) => Promise<React.ReactNode[]>;
   initialItems?: React.ReactNode[];
   showScrollBar?: boolean;
@@ -21,14 +14,7 @@ export interface ScrollUProps<T = any>
 }
 
 const ScrollU = <T = any>({
-  children,
-  variant,
-  size,
-  visibleItems = 5,
-  showButtons = true,
-  maxCacheItems = 10,
   className,
-  containerHeight = 500,
   renderItem,
   initialItems = [],
   showScrollBar = true,
@@ -40,9 +26,7 @@ const ScrollU = <T = any>({
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [translateY, setTranslateY] = useState<number>(0);
-  const [velocity, setVelocity] = useState<number>(0);
   const [scrollBar, setScroll] = useState<{ height: number, top: number }>({ height: 0, top: 0 });
-
   const clearButtonTimer = useRef<NodeJS.Timeout | null>(null);
   const clearTopItemTimer = useRef<NodeJS.Timeout | null>(null);
   const [items, setItems] = useState<React.ReactNode[]>(initialItems);
@@ -52,14 +36,10 @@ const ScrollU = <T = any>({
   const lastNextMsgId = useRef<number | null>(null);
   const firstItemRef = useRef<HTMLDivElement>(null);
   const lastItemRef = useRef<HTMLDivElement>(null);
-  const [isScrolling, setIsScrolling] = useState(false);
   const rafId = useRef<number | null>(null);
   const intersectionObserver = useRef<IntersectionObserver | null>(null);
   const [pendingPreAdjust, setPendingPreAdjust] = useState<false | { oldHeight: number, currentTranslateY: number }>(false);
 
-
-
-  // pre 函数：向下滚动，在顶端添加新节点
   const handlePre = useCallback(async () => {
     if (isLoadingPre || !renderItem) return;
     const firstItemData = items.length > 0 ? items[0] : undefined;
@@ -75,11 +55,10 @@ const ScrollU = <T = any>({
     setIsLoadingPre(true);
     try {
       const newItems = await renderItem('pre', firstItemData as T);
-      // 2. 先设置 pendingPreAdjust，带上 oldHeight
       const currentTranslateY = translateY;
       const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });
-      // 3. 再 setItems
+
       setItems(prev => [...newItems, ...prev]);
     } finally {
       setIsLoadingPre(false);
@@ -87,14 +66,11 @@ const ScrollU = <T = any>({
     }
   }, [isLoadingPre, renderItem, items, translateY]);
 
-  // next 函数：向上滚动，在末尾添加新节点
   const handleNext = useCallback(async () => {
     if (isLoadingNext || !renderItem) return;
 
-    // 获取当前最后一个项目的数据作为上下文
     const lastItemData = items.length > 0 ? items[items.length - 1] : undefined;
 
-    // 防重复请求：检查是否已经请求过相同 ID 的消息
     if (lastItemData && React.isValidElement(lastItemData)) {
       const currentMsgId = (lastItemData as any).props?.msgId;
       if (typeof currentMsgId === 'number' && lastNextMsgId.current === currentMsgId) {
@@ -114,23 +90,18 @@ const ScrollU = <T = any>({
     }
   }, [isLoadingNext, renderItem, items]);
 
-  // 设置 IntersectionObserver
   const setupIntersectionObserver = useCallback(() => {
-    // 清理之前的 observer
     if (intersectionObserver.current) {
       intersectionObserver.current.disconnect();
     }
 
-    // 创建新的 observer
     intersectionObserver.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // 第一个元素可见，加载 pre 数据
             if (entry.target === firstItemRef.current) {
               handlePre();
             }
-            // 最后一个元素可见，加载 next 数据
             else if (entry.target === lastItemRef.current) {
               handleNext();
             }
@@ -139,12 +110,11 @@ const ScrollU = <T = any>({
       },
       {
         root: containerRef.current,
-        rootMargin: '50px', // 提前 50px 触发
-        threshold: 0.1 // 10% 可见就触发
+        rootMargin: '50px',
+        threshold: 0.1
       }
     );
 
-    // 观察第一个和最后一个元素
     if (firstItemRef.current) {
       intersectionObserver.current.observe(firstItemRef.current);
     } else {
@@ -156,7 +126,7 @@ const ScrollU = <T = any>({
     } else {
       console.log('Last item ref is null');
     }
-  }, [items.length]); // 只依赖 items.length
+  }, [items.length]);
 
 
   const cleanItemsFromButton = useCallback(() => {
@@ -216,24 +186,21 @@ const ScrollU = <T = any>({
 
   const startInertia = (initialVelocity: number) => {
     let velocity = initialVelocity;
-    setIsScrolling(true);
 
     const animate = () => {
       if (Math.abs(velocity) < 0.1) {
-        setIsScrolling(false);
         return;
       }
 
       setTranslateY(prev => {
         const next = prev - velocity;
-        // 边界处理
         const max = containerRef.current!.offsetHeight * 2 / 3;
         const min = containerRef.current!.offsetHeight * 1 / 3 - contentRef.current!.offsetHeight;
         const newTranslateY = Math.max(min, Math.min(max, next));
         return newTranslateY;
       });
 
-      velocity *= 0.35; // 模拟摩擦力
+      velocity *= 0.35;
       rafId.current = requestAnimationFrame(animate);
     };
 
@@ -259,7 +226,6 @@ const ScrollU = <T = any>({
     }
   }, [translateY, items]);
 
-  // 监听滚动事件（仅处理滚动位置，不处理数据加载）
   const handleScroll = useCallback((event: WheelEvent) => {
     event.preventDefault();
     if (clearButtonTimer.current) {
@@ -277,7 +243,7 @@ const ScrollU = <T = any>({
   }, []
   );
 
-  // 添加滚动事件监听器
+
   useEffect(() => {
     const container = containerRef.current;
 
@@ -293,27 +259,21 @@ const ScrollU = <T = any>({
     }
   }, [handleScroll]);
 
-  // 初始化 IntersectionObserver
   useEffect(() => {
-    //console.log('Initializing IntersectionObserver, items count:', items.length);
     setupIntersectionObserver();
-
     return () => {
       if (intersectionObserver.current) {
         intersectionObserver.current.disconnect();
       }
     };
-  }, [items.length]); // 只依赖 items.length
+  }, [items.length]);
 
-  // pre 加载后自动平移
   useLayoutEffect(() => {
     if (pendingPreAdjust && contentRef.current) {
       const newHeight = contentRef.current.offsetHeight;
 
       const heightDiff = newHeight - pendingPreAdjust.oldHeight;
       if (heightDiff !== 0) {
-        //setTranslateY(pendingPreAdjust.currentTranslateY - heightDiff);
-        //console.log('newHeight', newHeight, 'oldHeight', pendingPreAdjust.oldHeight, 'heightDiff', heightDiff);
         setTranslateY(prevTranslateY => {
           return prevTranslateY - heightDiff;
         });
@@ -326,23 +286,15 @@ const ScrollU = <T = any>({
     <div
       ref={containerRef}
       className={cn(
-        scrollUVariants({ variant, size, className }),
-        'relative'
+        'relative',
+        'h-full',
+        'overflow-hidden',
+        className,
       )}
-      style={{
-        height: `${containerHeight}px`,
-        border: '2px solid red',
-        overflow: 'hidden'
-      }}
-      tabIndex={0}
-      onFocus={() => console.log('Container focused')}
-      onBlur={() => console.log('Container blurred')}
       {...props}
     >
-
       <div
         ref={contentRef}
-        className="scroll-u-content"
         style={{
           transform: `translateY(${translateY}px)`,
           willChange: 'transform'
@@ -351,30 +303,19 @@ const ScrollU = <T = any>({
         {items.map((item, index) => {
           const isFirst = index === 0;
           const isLast = index === items.length - 1;
-          // 为第一个和最后一个元素包装一个 div 来设置 ref
           if (isFirst || isLast) {
             return (
-              <div
-                key={index}
-                ref={isFirst ? firstItemRef : lastItemRef}
-              //style={{ border: isFirst ? '2px solid red' : '2px solid blue' }}
-              >
+              <div key={index} ref={isFirst ? firstItemRef : lastItemRef}>
                 {item}
               </div>
             );
           }
-
           return <div key={index}>{item}</div>;
         })}
-        {(isLoadingPre || isLoadingNext) && (
-          <div className="flex justify-center items-center py-4 text-gray-500">
-            {isLoadingPre ? '加载历史消息...' : '加载更多消息...'}
-          </div>
-        )}
       </div>
-      {showScrollBar && (scrollBarRender(scrollBar.height,scrollBar.top))}
+      {showScrollBar && (scrollBarRender(scrollBar.height, scrollBar.top))}
     </div>
   );
 };
 
-export { ScrollU, scrollUVariants, scrollUItemVariants };
+export { ScrollU };

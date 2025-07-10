@@ -24,7 +24,6 @@ export function Message({
       "flex w-full max-w-md mb-4",
       isOwn ? "justify-end" : "justify-start"
     )} style={{
-      border: '1px solid green'
     }}>
       <div className={cn(
         "relative rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200 p-4",
@@ -46,18 +45,7 @@ export function Message({
             </h4>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <span>{msgId}</span>
-              {isOwn && (
-                <span className={cn(
-                  "ml-1 text-xs px-1 py-0.5 rounded-full border",
-                  status === 'read' && "bg-green-100 text-green-700 border-green-300",
-                  status === 'delivered' && "bg-blue-100 text-blue-700 border-blue-300",
-                  status === 'sent' && "bg-gray-100 text-gray-700 border-gray-300"
-                )}>
-                  {status === 'read' && '已读'}
-                  {status === 'delivered' && '已送达'}
-                  {status === 'sent' && '已发送'}
-                </span>
-              )}
+             
             </div>
           </div>
         </div>
@@ -69,7 +57,20 @@ export function Message({
             {content}
           </p>
         </div>
+        {isOwn && (
+                <span className={cn(
+                  "ml-1 text-xs px-1 py-0.5 rounded-full border",
+                  status === 'read' && "bg-green-100 text-green-700 border-green-300",
+                  status === 'delivered' && "bg-blue-100 text-blue-700 border-blue-300",
+                  status === 'sent' && "bg-gray-100 text-gray-700 border-gray-300"
+                )}>
+                  {status === 'read' && '已读'}
+                  {status === 'delivered' && '已送达'}
+                  {status === 'sent' && '已发送'}
+                </span>
+              )}
       </div>
+      
     </div>
   )
 }

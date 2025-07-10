@@ -90,16 +90,14 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4" >
       <div className="max-w-4xl mx-auto space-y-8">
         {/* 滚动列表示例 */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
-          <div style={{ width: '500px', margin: '0 auto' }}>
+          <div style={{ width: '500px', height: '600px' }}>
             <ScrollU
-              visibleItems={3}
-              size="sm"
-              containerHeight={600}
+              className={'g-red-500 border p-4'}
               initialItems={[
                 <Message
                   msgId={0}
