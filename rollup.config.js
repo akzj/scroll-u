@@ -1,0 +1,47 @@
+import typescript from 'rollup-plugin-typescript2';
+import dts from 'rollup-plugin-dts';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+import preserveDirectives from 'rollup-plugin-preserve-directives';
+
+export default [
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        dir: 'dist/esm',
+        format: 'esm',
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        sourcemap: true,
+      },
+      {
+        dir: 'dist/cjs',
+        format: 'cjs',
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      peerDepsExternal(),
+      resolve(),
+      commonjs(),
+      typescript({
+        tsconfig: './tsconfig.json',
+        clean: true,
+      }),
+      preserveDirectives({ suppressPreserveModulesWarning: true })
+    ],
+    external: ['react', 'react-dom'],
+  },
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'dist/index.d.ts',
+      format: 'esm',
+    },
+    plugins: [dts()],
+  },
+];
