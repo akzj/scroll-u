@@ -14,12 +14,13 @@ const DefaultScrollBar = ({
                 position: 'absolute',
                 right: 4,
                 top: 0,
-                width: 6,
+                width: 4,
                 height: '100%',
                 background: '#eee',
                 borderRadius: 3,
                 overflow: 'hidden',
                 pointerEvents: 'none',
+                zIndex: 15
             }}
         >
             <div

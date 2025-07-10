@@ -22,6 +22,6 @@
       "@/*": ["./components/*"]
     }
   },
-  "include": ["../next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../next.config.ts"],
+  "include": ["../packages/scroll-u/next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../packages/scroll-u/next.config.ts"],
   "exclude": ["node_modules"]
 }

@@ -306,19 +306,14 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'relative',
-        'h-full',
-        'overflow-hidden',
-        className,
-      )}
-      {...props}
+      className={cn('relative h-full w-full overflow-hidden border', className)}
     >
       <div
         ref={contentRef}
         style={{
           transform: `translateY(${translateY}px)`,
-          willChange: 'transform'
+          willChange: 'transform',
+          paddingRight: showScrollBar ? 20 : 0,
         }}
       >
         {items.map((item, index) => {

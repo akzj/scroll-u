@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next export"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
@@ -18,8 +19,9 @@
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "scroll-u": "file:../",
-    "tailwind-merge": "^3.3.1"
+    "scroll-u": "file:../scroll-u/",
+    "tailwind-merge": "^3.3.1",
+    "tslib": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

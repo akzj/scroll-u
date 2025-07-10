@@ -5,10 +5,10 @@ import { Heart } from "lucide-react"; // 你可以用任何图标库，比如 lu
 export interface MessageProps {
   sender: string;
   content: string;
-  isOwn?: boolean;
-  status?: 'sent' | 'delivered' | 'read';
-  msgId?: number;
-  liked?: boolean; // 是否已点赞
+  isOwn: boolean;
+  status: 'sent' | 'delivered' | 'read';
+  liked: boolean; // 是否已点赞
+  msgId: number;
   onLike?: (props: MessageProps) => void; // 点赞回调
 }
 
@@ -26,7 +26,7 @@ export function Message(props: MessageProps) {
   return (
     <div
       className={cn(
-        "flex w-full max-w-md mb-4",
+        "flex w-full mb-4",
         isOwn ? "justify-end" : "justify-start"
       )}
     >
