@@ -1,6 +1,8 @@
 
 ## 📄 ScrollU 组件简介（中文）
 
+[live demo](https://akzj.github.io/scroll-u/)
+
 `ScrollU` 是一个高性能的滚动列表组件，支持：
 
 - **上下滚动加载数据**（通过 IntersectionObserver 和手动滚动）
