@@ -1,8 +1,7 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: "export",
-  /* config options here */
+  basePath: "/scroll-u",
+  assetPrefix: "/scroll-u/",
 };
 
 export default nextConfig;
