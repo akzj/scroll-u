@@ -53,14 +53,3 @@ Ideal for chat windows, log feeds, timelines, and other scenarios requiring dyna
 ```
 
 ---
-
-## 🧠 特性亮点（Key Features）
-
-| 特性 | 描述 |
-|------|------|
-| 动态加载 | 支持向上/向下滚动时加载新内容 |
-| 动画优化 | 根据滚动速度动态启用/禁用过渡动画 |
-| 滚动条 | 支持默认滚动条或自定义滚动条组件 |
-| 性能优化 | 使用 IntersectionObserver 和节流处理 |
-| 可扩展性 | 支持自定义渲染、样式、动画等 |
----
