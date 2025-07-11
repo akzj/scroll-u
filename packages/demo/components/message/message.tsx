@@ -10,6 +10,7 @@ export interface MessageProps {
   liked: boolean; // 是否已点赞
   msgId: number;
   onLike?: (props: MessageProps) => void; // 点赞回调
+  onDelete?: (props: MessageProps) => void; // 删除回调
 }
 
 export function Message(props: MessageProps) {
@@ -21,6 +22,7 @@ export function Message(props: MessageProps) {
     msgId,
     liked = false,
     onLike,
+    onDelete,
   } = props;
 
   return (
@@ -92,6 +94,14 @@ export function Message(props: MessageProps) {
               size={16}
               className={liked ? "fill-red-500 text-red-500" : "text-gray-400"}
             />
+          </button>
+
+          {/* 删除按钮 */}
+          <button
+            onClick={() => onDelete?.(props)}
+            className="ml-2 text-xs text-gray-400 hover:text-red-500"
+          >
+            删除
           </button>
         </div>
       </div>

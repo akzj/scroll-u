@@ -1,16 +1,12 @@
 
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef} from 'react';
 import { ScrollU, ScrollURef, ReactNodes } from 'scroll-u';
 import { Message, MessageProps } from '../components/message/message';
 import { ReactNode } from "react";
 
 export default function Home() {
-
-
-
-
   const updateMessageLikeStatus = (msg: MessageProps) => {
     if (!scrollRef.current) return;
     scrollRef.current.updateNodes((nodes: ReactNodes): ReactNodes => {
@@ -23,8 +19,6 @@ export default function Home() {
       });
     });
   };
-
-
 
   function getMessageProps(node: ReactNode): MessageProps | undefined {
     if (node && React.isValidElement(node)) {
@@ -50,6 +44,7 @@ export default function Home() {
           isOwn={Math.random() > 0.5}
           status="read"
           onLike={updateMessageLikeStatus}
+          onDelete={handleDelete}
         />
       );
     }
@@ -58,6 +53,16 @@ export default function Home() {
     return direction === 'pre' ? messages.reverse() : messages;
   }
 
+  // 删除消息
+  const handleDelete = (msg: MessageProps) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.updateNodes((nodes: ReactNodes) =>
+      nodes.filter((node) => {
+        const props = getMessageProps(node);
+        return props?.msgId !== msg.msgId;
+      })
+    );
+  };
 
   const initMessage = [
     <Message
@@ -69,6 +74,7 @@ export default function Home() {
       isOwn={false}
       status="read"
       onLike={updateMessageLikeStatus}
+      onDelete={handleDelete}
     />,
     <Message
       key={1}
@@ -79,6 +85,7 @@ export default function Home() {
       isOwn={false}
       status="read"
       onLike={updateMessageLikeStatus}
+      onDelete={handleDelete}
     />,
     <Message
       key={2}
@@ -89,11 +96,11 @@ export default function Home() {
       isOwn={false}
       status="read"
       onLike={updateMessageLikeStatus}
+      onDelete={handleDelete}
     />
   ]
 
   const scrollRef = useRef<ScrollURef>(null)
-
 
 
   return (
@@ -103,6 +110,7 @@ export default function Home() {
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
           <div style={{ width: '800px', height: '600px' }}>
+
             <ScrollU
               ref={scrollRef}
               initialItems={initMessage}
