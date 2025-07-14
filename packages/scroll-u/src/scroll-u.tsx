@@ -9,6 +9,7 @@ export type UpdateNodeHandle = (items: ReactNodes) => ReactNodes;
 export interface ScrollURef {
   updateNodes: (handle: UpdateNodeHandle) => void;
   listNodes: () => ReactNodes;
+  trigerRender: (direction: 'pre' | 'next') => void;
 }
 
 export interface ScrollUProps {
@@ -88,6 +89,13 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
     },
     listNodes: () => {
       return items
+    },
+    trigerRender: (direction: 'pre' | 'next') => {
+      if (direction === 'pre') {
+        handlePre();
+      } else {
+        handleNext();
+      }
     }
   }));
 
