@@ -4,6 +4,8 @@
     "packages/*"
   ],
   "dependencies": {
+    "styled": "^1.0.0",
+    "styled-components": "^6.1.19",
     "tslib": "^2.8.1"
   },
   "version": "0.1.0"

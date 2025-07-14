@@ -1,10 +1,11 @@
 
 'use client';
 
-import React, { useRef} from 'react';
+import React, { useRef } from 'react';
 import { ScrollU, ScrollURef, ReactNodes } from 'scroll-u';
 import { Message, MessageProps } from '../components/message/message';
 import { ReactNode } from "react";
+import styled from 'styled-components'
 
 export default function Home() {
   const updateMessageLikeStatus = (msg: MessageProps) => {
@@ -104,20 +105,15 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4" >
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* 滚动列表示例 */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
-          <div style={{ width: '800px', height: '600px' }}>
-
-            <ScrollU
-              ref={scrollRef}
-              initialItems={initMessage}
-              renderItem={reloadMore}
-            />
-          </div>
-        </div>
+    <div className="h-[600px] flex flex-col bg-white rounded-lg p-6 shadow-sm">
+      <h2 className="text-xl font-semibold mb-4">自定义滚动列表</h2>
+      <div className="flex-1 min-h-0">
+        <ScrollU
+          className="h-full"
+          ref={scrollRef}
+          initialItems={initMessage}
+          renderItem={reloadMore}
+        />
       </div>
     </div>
   )

@@ -1,7 +1,6 @@
 'use client'
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useImperativeHandle, forwardRef } from 'react';
 import { DefaultScrollBar } from './scroll-bar';
-import { cn } from './utils';
 
 export type ReactNodes = React.ReactNode[];
 export type UpdateNodeHandle = (items: ReactNodes) => ReactNodes;
@@ -62,6 +61,9 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
     setIsLoadingPre(true);
     try {
       const newItems = await renderItem('pre', first);
+      if (!newItems || newItems.length === 0) {
+        return;
+      }
       const currentTranslateY = translateY;
       const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });
@@ -227,8 +229,8 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
 
       setTranslateY(prev => {
         const next = prev - velocity;
-        const max = containerRef.current!.offsetHeight * 2 / 3;
-        const min = containerRef.current!.offsetHeight * 1 / 3 - contentRef.current!.offsetHeight;
+        const max = containerRef.current!.offsetHeight * 0.01;
+        const min = containerRef.current!.offsetHeight - contentRef.current!.offsetHeight;
         const newTranslateY = Math.max(min, Math.min(max, next));
         return newTranslateY;
       });
@@ -314,7 +316,15 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
   return (
     <div
       ref={containerRef}
-      className={cn('relative h-full w-full overflow-hidden border', className)}
+      className={className}
+      style={{
+        height: '100%', // 或 100%，由父容器控制
+        overflow: 'hidden', // 关键
+        position: 'relative',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
       <div
         ref={contentRef}
