@@ -118,6 +118,9 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
     try {
       setIsLoadingNext(true);
       const newItems = await renderItem('next', last);
+      if (!newItems || newItems.length == 0) {
+        return
+      }
       setItems(prev => [...prev, ...newItems]);
     } finally {
       setIsLoadingNext(false);
@@ -183,9 +186,10 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
           break;
         }
       }
-    }
-    if (removeIndex !== -1) {
-      setItems(prev => prev.slice(0, removeIndex));
+      if (removeIndex !== -1 && removeIndex < nodes?.length - 1) {
+        removeIndex += 1; // prevent reload from button 
+        setItems(prev => prev.slice(0, removeIndex));
+      }
     }
   }, [containerRef, contentRef]);
 
@@ -209,7 +213,8 @@ const ScrollU = forwardRef<ScrollURef, ScrollUProps>((props, ref) => {
         }
       }
     }
-    if (removeIndex !== -1) {
+    if (removeIndex !== -1 && removeIndex > 0) {
+      removeIndex -= 1; // prevent reload from top
       const currentTranslateY = translateY;
       const oldHeight = contentRef.current ? contentRef.current.offsetHeight : 0;
       setPendingPreAdjust({ oldHeight, currentTranslateY });

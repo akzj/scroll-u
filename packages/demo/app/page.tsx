@@ -5,7 +5,6 @@ import React, { useRef } from 'react';
 import { ScrollU, ScrollURef, ReactNodes } from 'scroll-u';
 import { Message, MessageProps } from '../components/message/message';
 import { ReactNode } from "react";
-import styled from 'styled-components'
 
 export default function Home() {
   const updateMessageLikeStatus = (msg: MessageProps) => {
